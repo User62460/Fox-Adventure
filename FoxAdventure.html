@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fox Game</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #87ceeb;
+    text-align: center;
+    position: relative;
+}
+h1, p {
+    margin: 10px;
+}
+#levelDisplay {
+    font-size: 20px;
+    font-weight: bold;
+}
+canvas {
+    border: 2px solid black;
+    display: block;
+    margin: 20px auto;
+}
+#congratsMessage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255,255,255,0.9);
+    padding: 30px;
+    border: 2px solid black;
+    font-size: 20px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+    width: 500px;
+    text-align: center;
+    display: none;
+}
+#restartButton {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+<h1>Fox Game</h1>
+<p>Use arrow keys to move your fox and collect the golden items!</p>
+<div id="levelDisplay">Level: 1  Score: 0</div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="congratsMessage">
+    Congratulations, you beat the game! Also this is my first website and I want it to be famous, so if you can share it with your friends, you'll make me happy :)
+    <br>
+    <button id="restartButton">Restart Game</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let level = 1;
+const maxLevel = 10;
+let score = 0;
+let gameFinished = false;
+
+// Player
+const fox = { x:50, y:550, width:50, height:50, speed:5 };
+
+// Item
+let item = { x:Math.random()*(canvas.width-30), y:Math.random()*(canvas.height-30), width:30, height:30 };
+
+// Obstacles
+let obstacles = [];
+function createObstacles() {
+    obstacles = [];
+    for(let i=0;i<level+2;i++){
+        obstacles.push({ x:Math.random()*(canvas.width-50), y:Math.random()*(canvas.height-50), width:50, height:50, color:'brown' });
+    }
+}
+createObstacles();
+
+// Enemy
+let enemy = { x:canvas.width-100, y:50, width:50, height:50, speed:2 };
+
+// Controls
+const keys = {};
+document.addEventListener('keydown', e=>keys[e.key]=true);
+document.addEventListener('keyup', e=>keys[e.key]=false);
+
+// Update
+function update() {
+    if(gameFinished) return;
+
+    if(keys['ArrowUp'] && fox.y>0) fox.y -= fox.speed;
+    if(keys['ArrowDown'] && fox.y+fox.height<canvas.height) fox.y += fox.speed;
+    if(keys['ArrowLeft'] && fox.x>0) fox.x -= fox.speed;
+    if(keys['ArrowRight'] && fox.x+fox.width<canvas.width) fox.x += fox.speed;
+
+    // Collision with item
+    if(fox.x<item.x+item.width && fox.x+fox.width>item.x &&
+       fox.y<item.y+item.height && fox.y+fox.height>item.y) nextLevel();
+
+    // Collision with obstacles
+    for(const obs of obstacles){
+        if(fox.x<obs.x+obs.width && fox.x+fox.width>obs.x &&
+           fox.y<obs.y+obs.height && fox.y+fox.height>obs.y){
+               fox.x=50; fox.y=550; score=Math.max(0,score-1);
+           }
+    }
+
+    // Enemy movement
+    if(enemy.x<fox.x) enemy.x+=enemy.speed;
+    if(enemy.x>fox.x) enemy.x-=enemy.speed;
+    if(enemy.y<fox.y) enemy.y+=enemy.speed;
+    if(enemy.y>fox.y) enemy.y-=enemy.speed;
+
+    // Collision with enemy
+    if(fox.x<enemy.x+enemy.width && fox.x+fox.width>enemy.x &&
+       fox.y<enemy.y+enemy.height && fox.y+fox.height>enemy.y){
+           fox.x=50; fox.y=550; score=Math.max(0,score-5);
+    }
+}
+
+// Next level
+function nextLevel(){
+    if(level<maxLevel){
+        level++; score+=10;
+        document.getElementById('levelDisplay').innerText = `Level: ${level}  Score: ${score}`;
+        fox.x=50; fox.y=550;
+        item.x=Math.random()*(canvas.width-item.width);
+        item.y=Math.random()*(canvas.height-item.height);
+        enemy.x=canvas.width-100; enemy.y=50;
+        createObstacles();
+    } else {
+        // Game finished
+        gameFinished = true;
+        score+=10;
+        document.getElementById('levelDisplay').innerText = `Level: ${level}  Score: ${score}`;
+        showCongratsMessage();
+    }
+}
+
+// Draw
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Obstacles
+    for(const obs of obstacles){ ctx.fillStyle=obs.color; ctx.fillRect(obs.x,obs.y,obs.width,obs.height); }
+    // Item
+    ctx.fillStyle='gold'; ctx.fillRect(item.x,item.y,item.width,item.height);
+    // Enemy
+    ctx.fillStyle='red'; ctx.fillRect(enemy.x,enemy.y,enemy.width,enemy.height);
+    // Fox
+    ctx.fillStyle='orange'; ctx.fillRect(fox.x,fox.y,fox.width,fox.height);
+}
+
+// Game loop
+function gameLoop(){ update(); draw(); if(!gameFinished) requestAnimationFrame(gameLoop); }
+gameLoop();
+
+// Show congratulations message with fade-in
+function showCongratsMessage(){
+    const msg = document.getElementById('congratsMessage');
+    msg.style.display = 'block';
+    setTimeout(()=>{ msg.style.opacity = 1; }, 100);
+}
+
+// Restart game
+document.getElementById('restartButton').addEventListener('click', ()=>{
+    level = 1;
+    score = 0;
+    gameFinished = false;
+    fox.x = 50; fox.y = 550;
+    enemy.x = canvas.width-100; enemy.y = 50;
+    item.x = Math.random()*(canvas.width-item.width);
+    item.y = Math.random()*(canvas.height-item.height);
+    createObstacles();
+    document.getElementById('levelDisplay').innerText = `Level: ${level}  Score: ${score}`;
+    const msg = document.getElementById('congratsMessage');
+    msg.style.opacity = 0;
+    setTimeout(()=>{ msg.style.display = 'none'; }, 500);
+    gameLoop();
+});
+</script>
+</body>
+</html>
