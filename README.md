@@ -1,0 +1,1 @@
+Fox Adventure is a fun browser game where you control an orange fox using arrow keys. Collect the golden items, avoid obstacles and enemies, and complete 10 levels. Beat the game to see a congratulatory message. Share it with your friends and enjoy!
